@@ -20,3 +20,6 @@ osdti_env/
 # Arquivos de contexto e configuração
 /CONTEXTO_DO_PROJETO.md
 /RESUMO_DE_ATUALIZACOES.md
+
+#Pasta de Backups
+/backups
