@@ -590,11 +590,11 @@ def render():
 
         # Cabeçalho da tabela
         if pode_editar:
-            cols_header = st.columns((1, 1, 1.5, 1.5, 1.5, 1, 1.5, 2))
-            headers = ["Número", "Tipo", "Secretaria", "Setor", "Solicitante", "Status", "Data", "Ações"]
+            cols_header = st.columns((1, 1, 1.5, 1.5, 1, 1.5, 2))
+            headers = ["Número", "Tipo", "Secretaria", "Solicitante", "Status", "Data", "Ações"]
         else:
-            cols_header = st.columns((1, 1, 1.5, 1.5,1.5, 1, 1.5, 1))
-            headers = ["Número", "Tipo", "Secretaria", "Setor", "Solicitante", "Status", "Data", "Ações"]
+            cols_header = st.columns((1, 1, 1.5, 1.5, 1, 1.5, 1))
+            headers = ["Número", "Tipo", "Secretaria", "Solicitante", "Status", "Data", "Ações"]
 
         for col, header in zip(cols_header, headers):
             col.markdown(f"**{header}**")
@@ -604,35 +604,34 @@ def render():
         # Renderizar linhas
         for idx, row in df_page.iterrows():
             if pode_editar:
-                cols = st.columns((1, 1, 1.5, 1.5, 1.5, 1, 1.5, 2))
+                cols = st.columns((1, 1, 1.5, 1.5, 1, 1.5, 2))
             else:
-                cols = st.columns((1, 1, 1.5, 1.5, 1.5, 1, 1.5, 1))
+                cols = st.columns((1, 1, 1.5, 1.5, 1, 1.5, 1))
 
             cols[0].write(str(row["numero"]))
             cols[1].write(str(row["tipo"]))
             cols[2].write(str(row["secretaria"]))
-            cols[3].write(str(row["setor"]))
-            cols[4].write(str(row["solicitante"]))
+            cols[3].write(str(row["solicitante"]))
 
             status_val = str(row["status"])
             if status_val == "EM ABERTO":
-                cols[5].markdown(f"🔴 {status_val}")
+                cols[4].markdown(f"🔴 {status_val}")
             elif status_val == "AGUARDANDO PEÇA(S)":
-                cols[5].markdown(f"🟠 {status_val}")
+                cols[4].markdown(f"🟠 {status_val}")
             elif status_val == "FINALIZADO":
-                cols[5].markdown(f"🟢 {status_val}")
+                cols[4].markdown(f"🟢 {status_val}")
             else:
-                cols[5].write(status_val)
+                cols[4].write(status_val)
 
             try:
                 data_formatada = pd.to_datetime(row["data"]).strftime("%d/%m/%Y")
-                cols[6].write(data_formatada)
+                cols[5].write(data_formatada)
             except Exception:
-                cols[6].write(str(row["data"]))
+                cols[5].write(str(row["data"]))
 
             # Ações
             if pode_editar:
-                col_a, col_b, col_c = cols[7].columns(3)
+                col_a, col_b, col_c = cols[6].columns(3)
 
                 if col_a.button("👁️", key=f"view_{idx}", help="Visualizar detalhes"):
                     limpar_estados_modais()
@@ -650,7 +649,7 @@ def render():
                         st.session_state.delete_os_data = row.to_dict()
                         st.rerun()
             else:
-                if cols[7].button("👁️", key=f"view_{idx}", help="Visualizar detalhes"):
+                if cols[6].button("👁️", key=f"view_{idx}", help="Visualizar detalhes"):
                     limpar_estados_modais()
                     st.session_state.view_os_id = idx
                     st.rerun()
