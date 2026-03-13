@@ -1,4 +1,3 @@
-# CÓDIGO COMPLETO E CORRIGIDO PARA: sistema_os_crud-main/laudos.py
 import streamlit as st
 import pandas as pd
 from sqlalchemy import text
@@ -109,7 +108,8 @@ def gerar_pdf_laudo(laudo_data):
     info_data = [
         [Paragraph('<b>DATA:</b>', style_label), Paragraph(data_registro, style_value)],
         [Paragraph('<b>TÉCNICO:</b>', style_label), Paragraph(laudo_data['tecnico'].upper(), style_value)],
-        [Paragraph('<b>ASSUNTO:</b>', style_label), Paragraph(f"OS {laudo_data['tipo_os']} - {laudo_data['numero_os']}", style_value)]
+        [Paragraph('<b>ASSUNTO:</b>', style_label), Paragraph(f"OS {laudo_data['tipo_os']} - {laudo_data['numero_os']}", style_value)],
+        [Paragraph('<b>SETOR:</b>', style_label), Paragraph(str(laudo_data.get('setor', 'Não Informado')), style_value)]
     ]
     
     tabela_cabecalho = Table(info_data, colWidths=[3*cm, 13*cm])
@@ -186,7 +186,7 @@ foi constatado que está <b>{laudo_data.get('equipamento_completo', 'N/A')}</b> 
     
     elementos.append(Spacer(1, 5*cm))
     
-    tabela_assinatura = Table([['_________________________________________']], colWidths=[8*cm])
+    tabela_assinatura = Table([['_______________']], colWidths=[8*cm])
     tabela_assinatura.setStyle(TableStyle([
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('LEFTPADDING', (0, 0), (-1, -1), 0),
@@ -344,16 +344,16 @@ def render_modal_detalhes(conn):
     
     @st.dialog("Detalhes do Laudo Técnico", dismissible=False)
     def show_modal():
-        st.markdown(f"**ID do Laudo:** {laudo['id']}")
-        st.markdown(f"**Número da OS:** {laudo['numero_os']} ({laudo['tipo_os']})")
-        st.markdown(f"**Status:** {laudo['status']}")
+        st.markdown(f"*ID do Laudo:* {laudo['id']}")
+        st.markdown(f"*Número da OS:* {laudo['numero_os']} ({laudo['tipo_os']})")
+        st.markdown(f"*Status:* {laudo['status']}")
         
         st.divider()
         
-        st.markdown(f"**Estado de Conservação:** {laudo.get('estado_conservacao', 'N/A')}")
-        st.markdown(f"**Equipamento Completo:** {laudo.get('equipamento_completo', 'N/A')}")
+        st.markdown(f"*Estado de Conservação:* {laudo.get('estado_conservacao', 'N/A')}")
+        st.markdown(f"*Equipamento Completo:* {laudo.get('equipamento_completo', 'N/A')}")
         
-        st.markdown("**Diagnóstico Técnico:**")
+        st.markdown("*Diagnóstico Técnico:*")
         st.text_area(
             "modal_diag",
             value=laudo.get('diagnostico', ''),
@@ -363,7 +363,7 @@ def render_modal_detalhes(conn):
         )
         
         if laudo.get('observacoes'):
-            st.markdown("**Observações:**")
+            st.markdown("*Observações:*")
             st.text_area(
                 "modal_obs",
                 value=laudo['observacoes'],
@@ -372,22 +372,34 @@ def render_modal_detalhes(conn):
                 label_visibility="collapsed"
             )
         
-        st.markdown(f"**Técnico Responsável:** {laudo['tecnico']}")
+        st.markdown(f"*Técnico Responsável:* {laudo['tecnico']}")
         
         fuso_sp = pytz.timezone('America/Sao_Paulo')
         data_reg = laudo['data_registro'].astimezone(fuso_sp).strftime('%d/%m/%Y %H:%M:%S')
-        st.markdown(f"**Data de Registro:** {data_reg}")
+        st.markdown(f"*Data de Registro:* {data_reg}")
         
         if laudo['data_atendimento']:
             data_at = laudo['data_atendimento'].astimezone(fuso_sp).strftime('%d/%m/%Y %H:%M:%S')
-            st.markdown(f"**Última Atualização:** {data_at}")
+            st.markdown(f"*Última Atualização:* {data_at}")
         
         st.divider()
         
         # BOTÃO PARA GERAR PDF
         if st.button("📄 Gerar PDF do Laudo", type="secondary", use_container_width=True):
             try:
-                pdf_buffer = gerar_pdf_laudo(laudo)
+                # Busca o setor na tabela original da OS antes de gerar o PDF
+                table_os = "os_interna" if laudo['tipo_os'] == "Interna" else "os_externa"
+                query_setor = text(f"SELECT setor FROM {table_os} WHERE numero = :numero")
+                
+                with conn.connect() as conexao:
+                    resultado_setor = conexao.execute(query_setor, {"numero": laudo['numero_os']}).fetchone()
+                    setor_info = resultado_setor[0] if resultado_setor else "Não Informado"
+                
+                # Monta os dados mesclados
+                laudo_pdf = dict(laudo)
+                laudo_pdf['setor'] = setor_info
+                
+                pdf_buffer = gerar_pdf_laudo(laudo_pdf)
                 st.download_button(
                     label="⬇️ Baixar PDF",
                     data=pdf_buffer,
@@ -480,12 +492,12 @@ def render():
             
             col1, col2 = st.columns(2)
             with col1:
-                st.write(f"**Secretaria:** {os_encontrada.get('secretaria', 'N/A')}")
-                st.write(f"**Setor:** {os_encontrada.get('setor', 'N/A')}")
-                st.write(f"**Solicitante:** {os_encontrada.get('solicitante', 'N/A')}")
+                st.write(f"*Secretaria:* {os_encontrada.get('secretaria', 'N/A')}")
+                st.write(f"*Setor:* {os_encontrada.get('setor', 'N/A')}")
+                st.write(f"*Solicitante:* {os_encontrada.get('solicitante', 'N/A')}")
             with col2:
-                st.write(f"**Equipamento:** {os_encontrada.get('equipamento', 'N/A')}")
-                st.write(f"**Patrimônio:** {os_encontrada.get('patrimonio', 'N/A')}")
+                st.write(f"*Equipamento:* {os_encontrada.get('equipamento', 'N/A')}")
+                st.write(f"*Patrimônio:* {os_encontrada.get('patrimonio', 'N/A')}")
             
             st.markdown("---")
             st.markdown("### Dados do Laudo Técnico")
@@ -522,7 +534,7 @@ def render():
                     
                     if tecnico_logado:
                         # Se veio de Minhas Tarefas, mostrar o técnico logado (desabilitado)
-                        st.write(f"**Técnico Responsável:** {tecnico_logado}")
+                        st.write(f"*Técnico Responsável:* {tecnico_logado}")
                         tecnico = tecnico_logado
                     else:
                         # Se foi busca manual, permitir seleção
@@ -620,12 +632,12 @@ def render():
             if df_laudos.empty:
                 st.info("Nenhum laudo encontrado.")
             else:
-                st.markdown(f"**{len(df_laudos)} Laudo(s) encontrado(s)**")
+                st.markdown(f"*{len(df_laudos)} Laudo(s) encontrado(s)*")
                 
                 cols_header = st.columns((0.5, 1, 1, 2, 1.5, 1, 0.8))
                 headers = ["ID", "OS", "Tipo", "Diagnóstico", "Estado", "Status", ""]
                 for col, header in zip(cols_header, headers):
-                    col.markdown(f"**{header}**")
+                    col.markdown(f"*{header}*")
                 
                 st.markdown("<hr style='margin-top: 0; margin-bottom: 0;'>", unsafe_allow_html=True)
                 
